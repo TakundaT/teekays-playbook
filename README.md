@@ -13,7 +13,9 @@ A basketball analytics site with live NBA win probabilities, pre-game prediction
 ```mermaid
 flowchart LR
     subgraph Offline["Offline (laptop)"]
-        H[stats.nba.com<br/>historical seasons] --> T[Training notebooks<br/>pre-game + in-game models]
+        H[stats.nba.com<br/>game logs 2020-21 to 2025-26<br/>+ play-by-play] --> F[Point-in-time features<br/>Elo, availability, rest]
+        F --> T[Training notebooks<br/>pre-game + in-game models]
+        T --> E[Evaluation<br/>Brier, log loss, calibration]
         T --> M[(Exported model files)]
     end
 
@@ -28,6 +30,7 @@ flowchart LR
     end
 
     M --> W
+    F -. same feature code .-> W
     CDN --> W
     INJ --> W
     W -- predictions,<br/>live WP --> DB
@@ -56,7 +59,13 @@ flowchart LR
 
 ## Models
 
-**Pre-game model.** Logistic regression on net rating difference (computed from box scores), home court, rest and back-to-backs, record or Elo, and an availability adjustment. In training, availability comes from who actually played. In production, it comes from the day's injury report.
+**Pre-game model.** Logistic regression predicting P(home team wins) for regular-season games. Features, all built only from games before tip-off:
+
+- **Elo rating gap** (team strength, with season carryover)
+- **Availability**: share of each team's usual minutes that are out tonight (box scores in training, injury report in production)
+- **Rest**: home and away back-to-back flags, plus a 3-games-in-4-nights flag
+
+Home-court advantage is the intercept. Seasons 2020-21 and 2021-22 warm up Elo; 2022-23 and 2023-24 train; 2024-25 validates every design choice; 2025-26 is a one-time final test. Calibration is the top priority. Full design and reasoning: [`docs/pregame-model.md`](docs/pregame-model.md).
 
 **In-game model.** Score margin, seconds remaining, possession, the pre-game probability as a prior, and margin divided by the square root of time remaining. Trained on 3 to 5 seasons of play-by-play and evaluated with Brier score and calibration plots.
 
