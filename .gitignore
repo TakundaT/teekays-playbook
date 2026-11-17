@@ -1,0 +1,23 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Data (too large for git)
+models/data/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
